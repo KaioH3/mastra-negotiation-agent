@@ -1,0 +1,23 @@
+{
+  "name": "supplier-negotiation-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "start": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "*",
+    "@ai-sdk/openai": "*",
+    "@mastra/core": "*",
+    "dotenv": "*",
+    "express": "*",
+    "zod": "*"
+  },
+  "devDependencies": {
+    "@types/express": "*",
+    "@types/node": "*",
+    "tsx": "*",
+    "typescript": "*"
+  }
+}

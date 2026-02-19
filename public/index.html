@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supplier Negotiation Agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3e;
+      --accent: #6366f1;
+      --accent-dim: #4f52c7;
+      --text: #e2e4f0;
+      --muted: #6b7280;
+      --brand-color: #818cf8;
+      --supplier-color: #34d399;
+      --win-color: #fbbf24;
+      --radius: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    header .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #1e2035;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+
+    /* ── Setup form ── */
+    .setup-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .setup-card h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .product-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #12151f;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      gap: 12px;
+    }
+
+    .product-row .info { flex: 1; min-width: 0; }
+    .product-row .info .name { font-weight: 500; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .product-row .info .fob { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    .product-row input[type="number"] {
+      width: 90px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      padding: 6px 10px;
+      text-align: right;
+    }
+
+    .product-row input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .note-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .note-row textarea {
+      flex: 1;
+      background: #12151f;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      padding: 10px 14px;
+      resize: none;
+      height: 60px;
+      font-family: inherit;
+    }
+
+    .note-row textarea::placeholder { color: var(--muted); }
+    .note-row textarea:focus { outline: none; border-color: var(--accent); }
+
+    button.start-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    button.start-btn:hover { background: var(--accent-dim); }
+    button.start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Status bar ── */
+    #status-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: #1a1d27;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Supplier columns ── */
+    .negotiations-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 960px) {
+      .negotiations-grid { grid-template-columns: 1fr; }
+    }
+
+    .supplier-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s;
+    }
+
+    .supplier-card.winner { border-color: var(--win-color); }
+
+    .supplier-header {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .supplier-header .name { font-weight: 600; font-size: 14px; }
+    .supplier-header .quality { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+
+    .tag-winner  { background: #2d2200; color: var(--win-color); border-color: var(--win-color); }
+    .tag-running { background: #1a1f38; color: var(--accent);    border-color: var(--accent); }
+    .tag-done    { background: #122b22; color: #34d399;           border-color: #34d399; }
+
+    .chat-area {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      max-height: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg-bubble {
+      padding: 10px 12px;
+      border-radius: 8px;
+      line-height: 1.55;
+      font-size: 12.5px;
+      max-width: 92%;
+    }
+
+    .msg-brand {
+      background: #1e2143;
+      border: 1px solid #2e3260;
+      color: var(--brand-color);
+      align-self: flex-start;
+    }
+
+    .msg-supplier {
+      background: #112820;
+      border: 1px solid #1a3d2e;
+      color: #6ee7b7;
+      align-self: flex-end;
+    }
+
+    .msg-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      opacity: 0.7;
+    }
+
+    .round-divider {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin: 4px 0;
+      position: relative;
+    }
+
+    .round-divider::before, .round-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 30%;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .round-divider::before { left: 0; }
+    .round-divider::after  { right: 0; }
+
+    /* Quote box */
+    .quote-box {
+      margin: 8px 12px 12px;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+
+    .quote-box .qt { font-weight: 600; color: var(--muted); margin-bottom: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .quote-box .qt-row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #1a1d27; }
+    .quote-box .qt-row:last-of-type { border-bottom: none; }
+    .quote-box .qt-row .label { color: var(--muted); }
+    .quote-box .qt-row .value { font-weight: 500; }
+    .quote-box .qt-total { margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px; display: flex; justify-content: space-between; font-weight: 700; }
+
+    /* ── Scores ── */
+    .scores-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: none;
+    }
+
+    .scores-card h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+    .scores-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .scores-table th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: 500;
+      padding: 6px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .scores-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .scores-table tr:last-child td { border-bottom: none; }
+
+    .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .score-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .score-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.6s ease; }
+    .score-bar-fill.best { background: var(--win-color); }
+
+    .score-num { min-width: 30px; text-align: right; font-weight: 600; }
+
+    /* ── Decision ── */
+    .decision-card {
+      background: var(--surface);
+      border: 1px solid var(--win-color);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      display: none;
+    }
+
+    .decision-card h2 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .decision-card .winner-name { font-size: 22px; font-weight: 700; color: var(--win-color); margin-bottom: 16px; }
+    .decision-card .reasoning { line-height: 1.7; color: var(--text); white-space: pre-wrap; font-size: 13.5px; }
+
+    .empty-state {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 32px 16px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Supplier Negotiation Agent</h1>
+  <span class="badge">Mastra.ai · Multi-Agent</span>
+</header>
+
+<div class="container">
+
+  <!-- Setup -->
+  <div class="setup-card">
+    <h2>Quote Request</h2>
+    <div class="products-grid" id="products-grid"></div>
+    <div class="note-row">
+      <textarea id="note" placeholder="Optional: add sourcing notes or priorities for the brand agent…" rows="2"></textarea>
+      <button class="start-btn" id="start-btn" onclick="startNegotiation()">Start Negotiation</button>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div id="status-bar">
+    <div class="spinner" id="spinner"></div>
+    <span id="status-text">Initializing agents…</span>
+  </div>
+
+  <!-- Supplier columns -->
+  <div class="negotiations-grid" id="negotiations-grid"></div>
+
+  <!-- Scores -->
+  <div class="scores-card" id="scores-card">
+    <h2>Evaluation Matrix</h2>
+    <table class="scores-table" id="scores-table"></table>
+  </div>
+
+  <!-- Decision -->
+  <div class="decision-card" id="decision-card">
+    <h2>Selected Supplier</h2>
+    <div class="winner-name" id="winner-name"></div>
+    <div class="reasoning" id="reasoning"></div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
