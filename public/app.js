@@ -75,6 +75,7 @@ async function startNegotiation() {
   state.running = true;
 
   document.getElementById('start-btn').disabled = true;
+  document.getElementById('reflection-card').style.display = 'none';
   document.getElementById('scores-card').style.display = 'none';
   document.getElementById('decision-card').style.display = 'none';
   state.quotes = {};
@@ -119,8 +120,8 @@ async function startNegotiation() {
 function handleEvent(event) {
   switch (event.type) {
     case 'rfq_ready':
-      setStatus('RFQ sent — negotiations in progress…', true);
-      Object.keys(state.suppliers).forEach(id => setTag(id, 'running', 'In progress'));
+      setStatus('RFQ sent — Round 1 negotiations in progress…', true);
+      Object.keys(state.suppliers).forEach(id => setTag(id, 'running', 'Round 1'));
       break;
 
     case 'message':
@@ -131,6 +132,12 @@ function handleEvent(event) {
       state.quotes[event.supplierId] = event.quote;
       renderQuote(event.supplierId, event.quote);
       setTag(event.supplierId, 'done', 'Done');
+      break;
+
+    case 'reflection':
+      renderReflection(event.content);
+      setStatus('Round 2 — sending differentiated counter-offers…', true);
+      Object.keys(state.suppliers).forEach(id => setTag(id, 'running', 'Round 2'));
       break;
 
     case 'scores':
@@ -261,6 +268,13 @@ function renderScores(scores) {
           </td>
         </tr>`).join('')}
     </tbody>`;
+}
+
+function renderReflection(content) {
+  const card = document.getElementById('reflection-card');
+  card.style.display = 'block';
+  document.getElementById('reflection-body').textContent = content;
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function renderDecision(winner, reasoning) {

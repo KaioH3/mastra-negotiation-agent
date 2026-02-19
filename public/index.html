@@ -347,6 +347,56 @@
     .decision-card .winner-name { font-size: 22px; font-weight: 700; color: var(--win-color); margin-bottom: 16px; }
     .decision-card .reasoning { line-height: 1.7; color: var(--text); white-space: pre-wrap; font-size: 13.5px; }
 
+    /* ── Reflexion card ── */
+    .reflection-card {
+      background: #12141f;
+      border: 1px solid #3d3060;
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+
+    .reflection-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .reflection-icon {
+      font-size: 22px;
+      line-height: 1;
+      color: #a78bfa;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .reflection-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #c4b5fd;
+      margin-bottom: 3px;
+    }
+
+    .reflection-sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .reflection-body {
+      background: #0d0f1a;
+      border: 1px solid #2a2050;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #d4c5f9;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
     .empty-state {
       color: var(--muted);
       font-size: 12px;
@@ -382,6 +432,18 @@
 
   <!-- Supplier columns -->
   <div class="negotiations-grid" id="negotiations-grid"></div>
+
+  <!-- Reflexion -->
+  <div class="reflection-card" id="reflection-card" style="display:none">
+    <div class="reflection-header">
+      <span class="reflection-icon">⟳</span>
+      <div>
+        <div class="reflection-title">Brand Strategy Update — Reflexion</div>
+        <div class="reflection-sub">After reviewing Round 1 proposals, the brand agent reflects and adapts its Round 2 strategy per supplier</div>
+      </div>
+    </div>
+    <pre class="reflection-body" id="reflection-body"></pre>
+  </div>
 
   <!-- Scores -->
   <div class="scores-card" id="scores-card">
