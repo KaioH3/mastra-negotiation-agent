@@ -334,6 +334,107 @@
 
     .score-num { min-width: 30px; text-align: right; font-weight: 600; }
 
+    /* ── Critic Audit ── */
+    .critic-card {
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: none;
+    }
+
+    .critic-approved {
+      background: #0d1a12;
+      border: 1px solid #1a5c30;
+    }
+
+    .critic-flagged {
+      background: #1a1000;
+      border: 1px solid #7a4500;
+    }
+
+    .critic-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .critic-icon {
+      font-size: 20px;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .critic-approved .critic-icon { color: #34d399; }
+    .critic-flagged  .critic-icon { color: #f59e0b; }
+
+    .critic-title {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .critic-approved .critic-title { color: #6ee7b7; }
+    .critic-flagged  .critic-title { color: #fbbf24; }
+
+    .critic-sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .critic-meta {
+      margin-left: auto;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .critic-verdict {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .verdict-approved { color: #34d399; }
+    .verdict-flagged  { color: #f59e0b; }
+
+    .critic-confidence {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .critic-audit-text {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    .critic-flags-section {
+      background: #0d1117;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .critic-flags-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .critic-flags-list {
+      margin: 0;
+      padding-left: 16px;
+      font-size: 12.5px;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
     /* ── Decision ── */
     .decision-card {
       background: var(--surface);
@@ -449,6 +550,26 @@
   <div class="scores-card" id="scores-card">
     <h2>Evaluation Matrix</h2>
     <table class="scores-table" id="scores-table"></table>
+  </div>
+
+  <!-- Critic Audit -->
+  <div class="critic-card" id="critic-card" style="display:none">
+    <div class="critic-header">
+      <span class="critic-icon">⚖</span>
+      <div>
+        <div class="critic-title">Independent Decision Audit</div>
+        <div class="critic-sub">A separate critic agent reviews the selection for logical errors, overlooked risks, and priority misalignment</div>
+      </div>
+      <div class="critic-meta">
+        <div class="critic-verdict" id="critic-verdict">—</div>
+        <div class="critic-confidence" id="critic-confidence"></div>
+      </div>
+    </div>
+    <p class="critic-audit-text" id="critic-audit-text"></p>
+    <div class="critic-flags-section">
+      <div class="critic-flags-label">Risk Flags</div>
+      <ul class="critic-flags-list" id="critic-flags"></ul>
+    </div>
   </div>
 
   <!-- Decision -->

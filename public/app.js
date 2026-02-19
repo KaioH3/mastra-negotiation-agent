@@ -77,6 +77,7 @@ async function startNegotiation() {
   document.getElementById('start-btn').disabled = true;
   document.getElementById('reflection-card').style.display = 'none';
   document.getElementById('scores-card').style.display = 'none';
+  document.getElementById('critic-card').style.display = 'none';
   document.getElementById('decision-card').style.display = 'none';
   state.quotes = {};
 
@@ -142,6 +143,11 @@ function handleEvent(event) {
 
     case 'scores':
       renderScores(event.scores);
+      break;
+
+    case 'critic_audit':
+      renderCriticAudit(event.audit);
+      setStatus('Decision audit complete — final selection incoming…', true);
       break;
 
     case 'decision':
@@ -274,6 +280,26 @@ function renderReflection(content) {
   const card = document.getElementById('reflection-card');
   card.style.display = 'block';
   document.getElementById('reflection-body').textContent = content;
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderCriticAudit(audit) {
+  const card = document.getElementById('critic-card');
+  card.style.display = 'block';
+
+  const isApproved = audit.verdict === 'APPROVED';
+  card.className = `critic-card critic-${isApproved ? 'approved' : 'flagged'}`;
+
+  document.getElementById('critic-verdict').textContent = audit.verdict;
+  document.getElementById('critic-verdict').className = `critic-verdict verdict-${isApproved ? 'approved' : 'flagged'}`;
+  document.getElementById('critic-confidence').textContent = `${audit.confidence}% confidence`;
+  document.getElementById('critic-audit-text').textContent = audit.audit;
+
+  const flagsList = document.getElementById('critic-flags');
+  flagsList.innerHTML = audit.riskFlags
+    .map(f => `<li>${f}</li>`)
+    .join('');
+
   card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 

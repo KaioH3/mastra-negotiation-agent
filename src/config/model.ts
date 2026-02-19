@@ -12,7 +12,8 @@ export function getModel() {
       apiKey: process.env.GROQ_API_KEY,
       baseURL: 'https://api.groq.com/openai/v1',
     });
-    return groq('llama-3.3-70b-versatile');
+    // Use .chat() to force Chat Completions format — Groq doesn't support the newer Responses API
+    return groq.chat('llama-3.3-70b-versatile');
   }
 
   if (process.env.OPENAI_API_KEY) {

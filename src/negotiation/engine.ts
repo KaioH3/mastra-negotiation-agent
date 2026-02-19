@@ -1,6 +1,7 @@
 import { PRODUCTS, SUPPLIERS, type Product, type SupplierProfile } from '../data/products.js';
 import { brandAgent } from '../agents/brandAgent.js';
 import { createSupplierAgent } from '../agents/supplierAgent.js';
+import { criticAgent } from '../agents/criticAgent.js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,12 +47,20 @@ export interface NegotiationResult {
   reasoning: string;
 }
 
+export interface CriticAudit {
+  verdict: 'APPROVED' | 'FLAGGED';
+  confidence: number;
+  audit: string;
+  riskFlags: string[];
+}
+
 export type NegotiationEvent =
   | { type: 'rfq_ready'; rfq: NegotiationResult['rfq'] }
   | { type: 'message'; supplierId: string; message: NegotiationMessage }
   | { type: 'quote_parsed'; supplierId: string; quote: ParsedQuote }
   | { type: 'reflection'; content: string }
   | { type: 'scores'; scores: Record<string, NegotiationScore> }
+  | { type: 'critic_audit'; audit: CriticAudit }
   | { type: 'decision'; winner: string; reasoning: string }
   | { type: 'done' }
   | { type: 'error'; error: string };
@@ -404,6 +413,61 @@ Be direct. Reference actual scores and numbers.`;
   return response.text;
 }
 
+// ─── Critic Audit ─────────────────────────────────────────────────────────────
+
+function parseCriticResponse(text: string): CriticAudit {
+  const verdictMatch  = text.match(/VERDICT:\s*(APPROVED|FLAGGED)/i);
+  const confMatch     = text.match(/CONFIDENCE:\s*(\d+)/);
+  const auditMatch    = text.match(/AUDIT:\s*([^\n]+(?:\n(?!RISK_FLAGS)[^\n]+)*)/);
+  const flagsMatch    = text.match(/RISK_FLAGS:\s*([\s\S]*?)(?:\n\n|$)/);
+
+  const verdict = (verdictMatch?.[1]?.toUpperCase() ?? 'APPROVED') as 'APPROVED' | 'FLAGGED';
+  const confidence = confMatch ? parseInt(confMatch[1]) : 75;
+  const audit = auditMatch ? auditMatch[1].trim() : text.slice(0, 300);
+  const riskFlags = flagsMatch
+    ? flagsMatch[1].split('\n').map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean)
+    : ['None identified'];
+
+  return { verdict, confidence, audit, riskFlags };
+}
+
+async function runCriticAudit(
+  negotiations: Record<string, SupplierNegotiation>,
+  scores: Record<string, NegotiationScore>,
+  winner: string,
+  reasoning: string,
+  emit: (e: NegotiationEvent) => void
+): Promise<CriticAudit> {
+  const winnerName = negotiations[winner].profile.name;
+
+  const scoreTable = Object.values(negotiations).map(n => {
+    const s = scores[n.profile.id];
+    const q = n.finalQuote;
+    return `${n.profile.name}:
+  Price score: ${s.priceScore}/10 (weight 35%) | Quality score: ${s.qualityScore}/10 (weight 30%)
+  Lead time score: ${s.leadTimeScore}/10 (weight 25%) | Payment score: ${s.paymentScore}/10 (weight 10%)
+  Overall: ${s.total}/10
+  Quote total: ${q?.totalValue ? `$${q.totalValue.toLocaleString()}` : 'N/A'} | Lead time: ${q?.leadTimeDays ?? '?'} days`;
+  }).join('\n\n');
+
+  const prompt = `SUPPLIER SELECTION DECISION TO AUDIT:
+
+Selected supplier: ${winnerName} (Overall: ${scores[winner].total}/10)
+
+FULL SCORE TABLE:
+${scoreTable}
+
+SELECTION REASONING PROVIDED:
+${reasoning}
+
+Audit this decision. Check the math, priority alignment, and risks. Output in the required format.`;
+
+  const response = await criticAgent.generate(prompt);
+  const audit = parseCriticResponse(response.text);
+  emit({ type: 'critic_audit', audit });
+  return audit;
+}
+
 // ─── Main orchestrator ────────────────────────────────────────────────────────
 
 export async function runNegotiation(
@@ -462,6 +526,7 @@ export async function runNegotiation(
     .sort(([, a], [, b]) => b.total - a.total)[0][0];
 
   const reasoning = await buildReasoning(finalNegotiations, scores, winner);
+  await runCriticAudit(finalNegotiations, scores, winner, reasoning, emit);
   emit({ type: 'decision', winner, reasoning });
   emit({ type: 'done' });
 

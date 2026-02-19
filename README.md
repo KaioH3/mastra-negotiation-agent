@@ -10,19 +10,29 @@ A brand agent simultaneously negotiates with three supplier agents to source foo
 User → Brand Agent ──┬─→ EastCraft Manufacturing Agent   (budget, flexible payment)
                      ├─→ PremiumStep Industries Agent    (premium quality)
                      └─→ SwiftMake Footwear Co. Agent   (fastest lead time)
-                              ↓ (2-round negotiation each)
-                         Scoring Matrix → Winner + Reasoning
+                              ↓ Round 1 (parallel)
+                         Brand Agent (Reflexion — reviews all R1, plans differentiated R2)
+                              ↓ Round 2 (parallel, tailored per supplier)
+                         Scoring Matrix
+                              ↓
+                         Critic Agent (independent audit: APPROVED / FLAGGED)
+                              ↓
+                         Winner + Reasoning
 ```
 
 **Agents:**
-- **Brand Agent** — Knows internal quality ratings (confidential). Sends structured RFQs, counter-negotiates, and makes the final supplier selection.
-- **Supplier Agent × 3** — Each has a distinct persona and negotiation strategy. Suppliers can suggest material substitutions to reduce cost or justify their premium.
+- **Brand Agent** — Sends structured RFQs with full BOM, runs Reflexion after Round 1, sends differentiated counter-offers, writes final reasoning.
+- **Supplier Agent × 3** — Each has a distinct persona and negotiation strategy. Can suggest material substitutions to reduce cost or justify their premium. Outputs a structured `===QUOTE===` block for reliable data extraction.
+- **Critic Agent** — Independent procurement auditor. Reviews the scoring math, priority alignment, and risk flags. Issues APPROVED or FLAGGED verdict with confidence %.
 
 **Negotiation flow:**
-1. Brand sends RFQ with quantities and target FOB prices
-2. Each supplier responds with an initial quote (round 1)
-3. Brand pushes back asking for best final offer (round 2)
-4. System scores all final quotes and selects the winner
+1. Brand sends RFQ with quantities, target FOB prices, and full Bill of Materials
+2. Each supplier responds with an initial quote (Round 1) — runs in parallel
+3. **Reflexion**: Brand agent reviews all Round 1 responses, generates a per-supplier strategy memo
+4. Brand sends differentiated counter-offers based on each supplier's leverage (Round 2)
+5. System scores all final quotes across 4 weighted criteria
+6. Critic agent audits the decision for errors and risks
+7. Final winner selected with full reasoning
 
 ## Scoring Matrix
 
@@ -44,10 +54,17 @@ User → Brand Agent ──┬─→ EastCraft Manufacturing Agent   (budget, fl
 ## Tech Stack
 
 - **[Mastra.ai](https://mastra.ai)** — Agent framework and orchestration
-- **Groq API** (Llama 3.3 70B) — LLM inference
 - **Express** — HTTP server + SSE streaming
 - **Vanilla JS** — Frontend (zero build step)
 - **TypeScript** — End-to-end type safety
+
+**LLM (auto-selected by available key):**
+
+| Priority | Env var | Model |
+|----------|---------|-------|
+| 1st | `ANTHROPIC_API_KEY` | claude-haiku-4-5 |
+| 2nd | `GROQ_API_KEY` | llama-3.3-70b-versatile |
+| 3rd | `OPENAI_API_KEY` | gpt-4o-mini |
 
 ## Running Locally
 
@@ -58,12 +75,14 @@ cd supplier-negotiation-agent
 npm install
 
 cp .env.example .env
-# Add your GROQ_API_KEY to .env
+# Add ANTHROPIC_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY
 
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
+
+> **Groq free tier note:** The pipeline makes ~6 concurrent LLM calls. On the 12K TPM free tier you may hit rate limits. Use Anthropic or OpenAI keys for a smooth run, or upgrade to Groq Dev Tier.
 
 ## Design Decisions
 
