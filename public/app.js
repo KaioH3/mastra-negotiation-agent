@@ -80,6 +80,7 @@ async function startNegotiation() {
   document.getElementById('critic-card').style.display = 'none';
   document.getElementById('decision-card').style.display = 'none';
   state.quotes = {};
+  lastRound = {};
 
   Object.keys(state.suppliers).forEach(id => {
     document.getElementById(`chat-${id}`).innerHTML =
