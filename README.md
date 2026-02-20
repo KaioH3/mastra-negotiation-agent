@@ -10,9 +10,9 @@ A brand agent simultaneously negotiates with three supplier agents to source foo
 User → Brand Agent ──┬─→ EastCraft Manufacturing Agent   (budget, flexible payment)
                      ├─→ PremiumStep Industries Agent    (premium quality)
                      └─→ SwiftMake Footwear Co. Agent   (fastest lead time)
-                              ↓ Round 1 (parallel)
+                              ↓ Round 1 (sequential)
                          Brand Agent (Reflexion — reviews all R1, plans differentiated R2)
-                              ↓ Round 2 (parallel, tailored per supplier)
+                              ↓ Round 2 (sequential, tailored per supplier)
                          Scoring Matrix
                               ↓
                          Critic Agent (independent audit: APPROVED / FLAGGED)
@@ -82,12 +82,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-> **Groq free tier note:** The pipeline makes ~6 concurrent LLM calls. On the 12K TPM free tier you may hit rate limits. Use Anthropic or OpenAI keys for a smooth run, or upgrade to Groq Dev Tier.
+> **Groq free tier note:** Each round runs suppliers sequentially, but the pipeline still makes ~6 LLM calls total. On the 12K TPM free tier you may hit rate limits on longer runs. Use Anthropic or OpenAI keys for a smooth experience, or upgrade to Groq Dev Tier.
 
 ## Design Decisions
 
-**Why run all 3 negotiations in parallel?**
-`Promise.all` starts all three simultaneously — realistic, and faster.
+**Why run supplier negotiations sequentially?**
+Each supplier call is awaited before the next starts. This respects API rate limits (especially on free tiers) and makes the SSE stream easier to follow — messages appear one supplier at a time rather than interleaved.
 
 **Why 2 rounds?**
 One round is too easy to game. Two rounds surface each supplier's real floor price and push them to show their best offer.
