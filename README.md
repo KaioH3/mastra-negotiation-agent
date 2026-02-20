@@ -69,8 +69,8 @@ User → Brand Agent ──┬─→ EastCraft Manufacturing Agent   (budget, fl
 ## Running Locally
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/supplier-negotiation-agent
-cd supplier-negotiation-agent
+git clone https://github.com/KaioH3/mastra-negotiation-agent
+cd mastra-negotiation-agent
 
 npm install
 

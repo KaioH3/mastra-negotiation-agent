@@ -491,22 +491,22 @@ export async function runNegotiation(
     agent: createSupplierAgent(s),
   }));
 
-  // ── Round 1: all suppliers in parallel ────────────────────────────────────
-  const round1Results = await Promise.all(
-    supplierAgents.map(({ profile, agent }) =>
-      executeRound1(profile, agent, rfq, products, emit)
-    )
-  );
+  // ── Round 1: sequential to respect free-tier TPM limits ──────────────────
+  const round1Results: Round1Result[] = [];
+  for (const { profile, agent } of supplierAgents) {
+    const result = await executeRound1(profile, agent, rfq, products, emit);
+    round1Results.push(result);
+  }
 
   // ── Reflexion: brand reviews all round-1 responses, plans round-2 ─────────
   const reflectionText = await generateReflection(round1Results, rfq, emit);
 
-  // ── Round 2: differentiated counters per supplier, in parallel ────────────
-  const round2Results = await Promise.all(
-    round1Results.map((r1, i) =>
-      executeRound2(r1, supplierAgents[i].agent, reflectionText, emit)
-    )
-  );
+  // ── Round 2: sequential to respect free-tier TPM limits ───────────────────
+  const round2Results: Round2Result[] = [];
+  for (let i = 0; i < round1Results.length; i++) {
+    const result = await executeRound2(round1Results[i], supplierAgents[i].agent, reflectionText, emit);
+    round2Results.push(result);
+  }
 
   // Assemble final negotiations with all 4 messages per supplier
   const finalNegotiations: Record<string, SupplierNegotiation> = {};
