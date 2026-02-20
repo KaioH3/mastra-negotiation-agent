@@ -219,12 +219,12 @@ async function executeRound1(
   };
   emit({ type: 'message', supplierId: profile.id, message: supplierMsg });
 
-  return {
-    profile,
-    brandMsg,
-    supplierMsg,
-    quote: parseQuote(res.text),
-  };
+  const quote = parseQuote(res.text);
+  if (quote) {
+    emit({ type: 'quote_parsed', supplierId: profile.id, quote });
+  }
+
+  return { profile, brandMsg, supplierMsg, quote };
 }
 
 interface Round2Result {
@@ -359,7 +359,8 @@ function scoreSuppliers(
     const leadTimeScore = maxLead === minLead ? 8
       : 10 - ((leadDays - minLead) / (maxLead - minLead)) * 6;
 
-    const paymentScore = id === 'supplier1' ? 9 : 6;
+    const terms = quote?.paymentTerms ?? '';
+    const paymentScore = /33/.test(terms) ? 9 : /net\s*60/i.test(terms) ? 5 : 6;
 
     const total =
       priceScore    * 0.35 +
